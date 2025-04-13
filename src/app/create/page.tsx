@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AlertSuccess from "@/components/AlertSuccess";
 
-// O funcție pentru a genera un ID unic pentru fiecare imagine
-const generateUniqueId = () => '_' + Math.random().toString(36).substr(2, 9);
+const generateUniqueId = () => '_' + Math.random().toString(36).slice(2, 11);
 
 export default function CreateBlog() {
   const [title, setTitle] = useState("");
@@ -21,7 +21,7 @@ export default function CreateBlog() {
       setImageTitles((prevTitles) => [
         ...prevTitles,
         ...files.map((_, index) => ({
-          id: generateUniqueId(), // Generează un ID unic pentru fiecare imagine
+          id: generateUniqueId(),
           title: `Image Title ${prevTitles.length + index + 1}`,
         })),
       ]);
@@ -29,38 +29,64 @@ export default function CreateBlog() {
   };
 
   const handleRemoveImage = (id: string) => {
-    // Filtrează imaginea și titlul după ID
     const updatedImages = images.filter((_, i) => imageTitles[i].id !== id);
     const updatedTitles = imageTitles.filter((image) => image.id !== id);
-
     setImages(updatedImages);
     setImageTitles(updatedTitles);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
+    const uploadedImageUrls: { url: string; title: string }[] = [];
+  
+    // Upload images
+    for (let i = 0; i < images.length; i++) {
+      const formData = new FormData();
+      formData.append("file", images[i]);
+  
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+  
+      const data = await res.json();
+  
+      if (res.ok) {
+        uploadedImageUrls.push({
+          url: data.url,
+          title: imageTitles[i].title,
+        });
+      } else {
+        alert("Failed to upload image: " + images[i].name);
+        return;
+      }
+    }
+  
     const blogData = {
       title,
       content,
-      images: images.map((file, index) => ({
-        url: URL.createObjectURL(file),
-        title: imageTitles[index].title,
-      })),
+      images: uploadedImageUrls,
     };
-
+  
     const response = await fetch("/api/create-blog", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(blogData),
     });
-
-    if (response.ok) {
-      alert("Blog created successfully!");
+  
+    const data = await response.json();
+  
+    // After blog is created, show success alert
+    if (response.ok && data.id) {
+      alert("Blog salvat cu succes!");
+      window.location.href = `/blog/${data.id}`; // Redirect to the created blog page
     } else {
       alert("Error creating blog");
     }
   };
+  
+  
 
   return (
     <div className="bg-gray-900 min-h-screen flex flex-col text-white">
@@ -120,7 +146,7 @@ export default function CreateBlog() {
                 />
                 <button
                   type="button"
-                  onClick={() => handleRemoveImage(imageTitles[index].id)} // Folosim ID-ul pentru a șterge imaginea corect
+                  onClick={() => handleRemoveImage(imageTitles[index].id)} 
                   className="ml-2 w-8 h-8 bg-gray-600 text-white rounded-full flex justify-center items-center hover:bg-gray-500 hover:cursor-pointer transition"
                 >
                   <svg
