@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       !content ||
       !images ||
       !Array.isArray(images) ||
-      !images.every(img => img.url && img.title)
+      !images.every((img) => img.url && img.title)
     ) {
       return NextResponse.json(
         { error: "Missing or invalid fields" },
@@ -41,18 +41,15 @@ export async function POST(req: Request) {
         title,
         content,
         images: {
-          create: images.map(img => ({
+          create: images.map((img) => ({
             url: img.url,
             title: img.title,
           })),
         },
       },
-      include: {
-        images: true,
-      },
     });
 
-    return NextResponse.json(newBlog, { status: 201 });
+    return NextResponse.json({ id: newBlog.id }, { status: 201 });
   } catch (error) {
     console.error("Error creating blog:", error);
     return NextResponse.json(

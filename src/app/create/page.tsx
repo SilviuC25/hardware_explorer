@@ -12,6 +12,7 @@ export default function CreateBlog() {
   const [content, setContent] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imageTitles, setImageTitles] = useState<{ id: string; title: string }[]>([]);
+  const [blogCreatedId, setBlogCreatedId] = useState<string | null>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -37,21 +38,20 @@ export default function CreateBlog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     const uploadedImageUrls: { url: string; title: string }[] = [];
-  
-    // Upload images
+
     for (let i = 0; i < images.length; i++) {
       const formData = new FormData();
       formData.append("file", images[i]);
-  
+
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
-  
+
       const data = await res.json();
-  
+
       if (res.ok) {
         uploadedImageUrls.push({
           url: data.url,
@@ -62,34 +62,38 @@ export default function CreateBlog() {
         return;
       }
     }
-  
+
     const blogData = {
       title,
       content,
       images: uploadedImageUrls,
     };
-  
+
     const response = await fetch("/api/create-blog", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(blogData),
     });
-  
+
     const data = await response.json();
-  
-    // After blog is created, show success alert
+
     if (response.ok && data.id) {
-      alert("Blog salvat cu succes!");
-      window.location.href = `/blog/${data.id}`; // Redirect to the created blog page
+      setBlogCreatedId(data.id.toString());
     } else {
       alert("Error creating blog");
     }
   };
-  
-  
 
   return (
     <div className="bg-gray-900 min-h-screen flex flex-col text-white">
+      {blogCreatedId && (
+        <AlertSuccess
+          title="Blog salvat cu succes"
+          description="Blogul a fost publicat cu succes."
+          buttonText="Vezi blogul"
+          redirectPath={`/blog/${blogCreatedId}`}
+        />
+      )}
       <Header />
 
       <main className="flex-grow flex items-center justify-center">
@@ -146,7 +150,7 @@ export default function CreateBlog() {
                 />
                 <button
                   type="button"
-                  onClick={() => handleRemoveImage(imageTitles[index].id)} 
+                  onClick={() => handleRemoveImage(imageTitles[index].id)}
                   className="ml-2 w-8 h-8 bg-gray-600 text-white rounded-full flex justify-center items-center hover:bg-gray-500 hover:cursor-pointer transition"
                 >
                   <svg
