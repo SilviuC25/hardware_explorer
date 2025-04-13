@@ -91,7 +91,7 @@ export default function CreateBlog() {
           title="Blog salvat cu succes"
           description="Blogul a fost publicat cu succes."
           buttonText="Vezi blogul"
-          redirectPath={`/blog/${blogCreatedId}`}
+          redirectPath={`/blogs/${blogCreatedId}`}
         />
       )}
       <Header />
