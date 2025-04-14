@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AlertSuccess from "@/components/AlertSuccess";
+import AlertPassword from "@/components/AlertPassword";
+import AlertTextOnly from "@/components/AlertTextOnly";
 
 const generateUniqueId = () => '_' + Math.random().toString(36).slice(2, 11);
+const BLOG_PASSWORD = "BN_30_PIT";
 
 export default function CreateBlog() {
   const [title, setTitle] = useState("");
@@ -13,6 +16,10 @@ export default function CreateBlog() {
   const [images, setImages] = useState<File[]>([]);
   const [imageTitles, setImageTitles] = useState<{ id: string; title: string }[]>([]);
   const [blogCreatedId, setBlogCreatedId] = useState<string | null>(null);
+
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [wrongPasswordAlert, setWrongPasswordAlert] = useState(false);
+  const [shouldSubmit, setShouldSubmit] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -84,6 +91,13 @@ export default function CreateBlog() {
     }
   };
 
+  useEffect(() => {
+    if (shouldSubmit) {
+      handleSubmit(new Event("submit") as unknown as React.FormEvent);
+      setShouldSubmit(false);
+    }
+  }, [shouldSubmit]);
+
   return (
     <div className="bg-gray-900 min-h-screen flex flex-col text-white">
       {blogCreatedId && (
@@ -94,6 +108,25 @@ export default function CreateBlog() {
           redirectPath={`/blogs/${blogCreatedId}`}
         />
       )}
+
+      {showPasswordPrompt && (
+        <AlertPassword
+          onSubmit={(pass) => {
+            if (pass === BLOG_PASSWORD) {
+              setShowPasswordPrompt(false);
+              setShouldSubmit(true);
+            } else {
+              setShowPasswordPrompt(false);
+              setWrongPasswordAlert(true);
+              setTimeout(() => setWrongPasswordAlert(false), 3000);
+            }
+          }}
+          onCancel={() => setShowPasswordPrompt(false)}
+        />
+      )}
+
+      {wrongPasswordAlert && <AlertTextOnly message="Parolă greșită!" />}
+
       <Header />
 
       <main className="flex-grow flex items-center justify-center">
@@ -102,7 +135,13 @@ export default function CreateBlog() {
             Create a New Blog
           </h1>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setShowPasswordPrompt(true);
+            }}
+            className="space-y-4"
+          >
             <input
               type="text"
               placeholder="Title"
@@ -141,6 +180,7 @@ export default function CreateBlog() {
                   type="text"
                   placeholder={`Image Title ${index + 1}`}
                   className="w-full p-2 rounded bg-gray-900 text-white border border-transparent focus:border-teal-600 focus:outline-none transition"
+                  value={imageTitles[index].title}
                   onChange={(e) => {
                     const updatedTitles = imageTitles.map((title) =>
                       title.id === imageTitles[index].id ? { ...title, title: e.target.value } : title
